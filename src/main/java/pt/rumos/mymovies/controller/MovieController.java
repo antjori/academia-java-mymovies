@@ -1,8 +1,17 @@
 package pt.rumos.mymovies.controller;
 
-import pt.rumos.mymovies.model.Movie;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pt.rumos.mymovies.dto.MovieRequest;
+import pt.rumos.mymovies.dto.MovieResponse;
+import pt.rumos.mymovies.dto.RatingUpdateRequest;
+import pt.rumos.mymovies.model.Movie;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -10,7 +19,7 @@ import java.util.List;
 public class MovieController {
 
     // Lista fixa em memória com 22 filmes para testes e validação
-    private final List<Movie> movies = List.of(
+    private final List<Movie> movies = new ArrayList<>(List.of(
             new Movie(1L, "Interstellar", "Christopher Nolan", 2014),
             new Movie(2L, "The Matrix", "Lana & Lilly Wachowski", 1999),
             new Movie(3L, "Inception", "Christopher Nolan", 2010),
@@ -32,15 +41,15 @@ public class MovieController {
             new Movie(19L, "Dune: Part Two", "Denis Villeneuve", 2024),
             new Movie(20L, "Oppenheimer", "Christopher Nolan", 2023),
             new Movie(21L, "Avatar", "James Cameron", 2009)
-    );
+    ));
 
     /**
      * Endpoint 1: Retorna todos os filmes cadastrados.
      * HTTP GET /api/movies
      */
     @GetMapping
-    public List<Movie> listAll() {
-        return movies;
+    public ResponseEntity<List<MovieResponse>> listAll() {
+        return ResponseEntity.ok(movies.stream().map(MovieResponse::fromDomain).toList());
     }
 
     /**
@@ -48,11 +57,13 @@ public class MovieController {
      * HTTP GET /api/movies/{id}
      */
     @GetMapping("/{id}")
-    public Movie getById(@PathVariable Long id) {
+    public ResponseEntity<MovieResponse> getById(@PathVariable final Long id) {
         return movies.stream()
                 .filter(m -> m.id().equals(id))
                 .findFirst()
-                .orElse(null);
+                .map(MovieResponse::fromDomain)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -60,13 +71,79 @@ public class MovieController {
      * HTTP GET /api/movies/search?title=matrix
      */
     @GetMapping("/search")
-    public List<Movie> searchByTitle(@RequestParam(required = false) String title) {
+    public ResponseEntity<List<MovieResponse>> searchByTitle(@RequestParam(required = false) final String title) {
         if (title == null || title.isBlank()) {
-            return movies;
+            return ResponseEntity.ok(movies.stream().map(MovieResponse::fromDomain).toList());
         }
-        String term = title.trim().toLowerCase();
-        return movies.stream()
+
+        final var term = title.trim().toLowerCase();
+
+        return ResponseEntity.ok(movies.stream()
                 .filter(m -> m.title().toLowerCase().contains(term))
-                .toList();
+                .map(MovieResponse::fromDomain)
+                .toList());
+    }
+
+    @PostMapping
+    public ResponseEntity<MovieResponse> create(@Valid @RequestBody final MovieRequest movieRequest) {
+        final var id = movies.getLast().id() + 1;
+        final var movie = new Movie(id, movieRequest.title(), movieRequest.director(), movieRequest.year());
+        movies.add(movie);
+
+        final var uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(id)
+                .toUri();
+        return ResponseEntity.created(uri).body(MovieResponse.fromDomain(movie));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MovieResponse> update(@PathVariable final Long id,
+                                                @Valid @RequestBody final MovieRequest movieRequest) {
+        return movies.stream()
+                .filter(m -> m.id().equals(id))
+                .findFirst()
+                .map(movie -> {
+                    final var updatedMovie = new Movie(movie.id(), movieRequest.title(), movieRequest.director(), movieRequest.year());
+                    // movies.remove(movie);
+                    //movies.add(updatedMovie);
+                    final var updatedMovieIndex = movies.indexOf(movie);
+                    movies.set(updatedMovieIndex, updatedMovie);
+                    return updatedMovie;
+                })
+                .map(MovieResponse::fromDomain)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable final Long id) {
+        /*return movies.stream()
+                .filter(m -> m.id().equals(id))
+                .findFirst()
+                .map(movie -> {
+                    movies.remove(movie);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());*/
+
+        final var removed = movies.removeIf(m -> m.id().equals(id));
+        return removed ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @PatchMapping("/{id}/rating")
+    public ResponseEntity<MovieResponse> updateRating(@PathVariable final Long id,
+                                                      @Valid @RequestBody final RatingUpdateRequest ratingUpdateRequest) {
+        return movies.stream().filter(m -> m.id().equals(id))
+                .findFirst()
+                .map(movie -> {
+                    final var updatedMovie = new Movie(movie.id(), movie.title(), movie.director(), movie.year(), ratingUpdateRequest.rating());
+                    final var updatedMovieIndex = movies.indexOf(movie);
+                    movies.set(updatedMovieIndex, updatedMovie);
+                    return updatedMovie;
+                })
+                .map(MovieResponse::fromDomain)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
