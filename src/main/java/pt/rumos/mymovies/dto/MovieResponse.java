@@ -1,9 +1,10 @@
 package pt.rumos.mymovies.dto;
 
 import pt.rumos.mymovies.model.Movie;
+import pt.rumos.mymovies.model.MovieDocument;
 
 public record MovieResponse(
-        Long id,
+        String id,
         String title,
         String director,
         Integer year,
@@ -20,8 +21,16 @@ public record MovieResponse(
         if (movie == null) {
             return null;
         }
-        return new MovieResponse(movie.id(), movie.title(), movie.director(),
+        return new MovieResponse(movie.id().toString(), movie.title(), movie.director(),
                                         movie.year(), movie.rating());
+    }
+
+    public static MovieResponse fromDomain(MovieDocument movieDocument) {
+        if (movieDocument == null) {
+            return null;
+        }
+        return new MovieResponse(movieDocument.getId(), movieDocument.getTitle(), movieDocument.getDirector(),
+                movieDocument.getYear(), movieDocument.getRating());
     }
 
 }
