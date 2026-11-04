@@ -20,8 +20,8 @@ public record MovieResponse(
         if (movie == null) {
             return null;
         }
-        return new MovieResponse(movie.id(), movie.title(), movie.director(),
-                                        movie.year(), movie.rating());
+        return new MovieResponse(movie.getId(), movie.getTitle(), movie.getDirector(),
+                                        movie.getYear(), movie.getRating());
     }
 
 }
