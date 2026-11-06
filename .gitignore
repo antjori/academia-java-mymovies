@@ -32,3 +32,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Spring specific ###
+/src/main/resources/application-local.yaml
+
+.DS_Store
