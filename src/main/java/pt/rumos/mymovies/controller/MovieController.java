@@ -2,18 +2,15 @@ package pt.rumos.mymovies.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.rumos.mymovies.dto.MovieRequest;
 import pt.rumos.mymovies.dto.MovieResponse;
 import pt.rumos.mymovies.dto.RatingUpdateRequest;
-import pt.rumos.mymovies.model.Movie;
-import org.springframework.web.bind.annotation.*;
 import pt.rumos.mymovies.service.MovieService;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.OptionalInt;
 
 @RestController
 @RequestMapping("/api/movies")
@@ -41,16 +38,13 @@ public class MovieController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<MovieResponse> getById(@PathVariable Long id) {
-        var optionalMovie = movieService.findById(id);
-        if (optionalMovie.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(optionalMovie.get());
+        var movieResponse = movieService.findById(id);
+        return ResponseEntity.ok(movieResponse);
     }
 
 
     /**
-     * Endpoint 4: Cria um novo filme.
+     * Endpoint 4: Cria um filme.
      * HTTP POST /api/movies
      */
     @PostMapping
@@ -99,9 +93,6 @@ public class MovieController {
     public ResponseEntity<MovieResponse> updateRating(@PathVariable Long id, @Valid @RequestBody RatingUpdateRequest request) {
         var optionalMovieResponse = movieService.updateRating(id,request);
 
-        if (optionalMovieResponse.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(optionalMovieResponse.get());
+        return optionalMovieResponse.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
