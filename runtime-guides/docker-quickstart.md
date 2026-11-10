@@ -1,17 +1,40 @@
-# 🐳 Guia Quickstart de Docker & Containers
+# 🐳 Guia Quickstart de Docker & Containers (v2)
 
 > **Academia Java Backend Developer**  
-> Ficheiro de referência para criação de imagens OCI, empacotamento multi-stage e execução da API MyMovies em containers.
+> Ficheiro de referência para verificação rápida de ambiente, criação de imagens OCI, empacotamento multi-stage e execução da API MyMovies em containers.
 
 ---
 
-## 📌 Porquê usar Containers?
+## ⚡ 1. Validação Rápida do Ambiente (Pré-Aula 07)
+
+Antes de iniciar a Aula 07, garanta que o Docker Desktop (Windows/macOS) ou Docker Engine (Linux) está ativo executando os **3 Comandos de Prontidão** no terminal:
+
+```bash
+# 1. Verificar se a CLI comunica com o Daemon/Engine
+docker version
+
+# 2. Confirmar a presença do plugin Docker Compose v2
+docker compose version
+
+# 3. Teste prático de download, execução e limpeza automática
+docker run --rm hello-world
+```
+
+> 💡 **Troubleshooting Rápido de Instalação:**
+> * **Daemon não responde:** Inicie o Docker Desktop ou verifique o serviço (`sudo systemctl start docker`).
+> * **Windows (WSL 2):** Corra `wsl --update` e `wsl --shutdown` no PowerShell caso o backend do Linux não inicialize.
+> * **Linux (Permissão Negada):** Execute `sudo usermod -aG docker $USER`, faça logout/login e tente novamente sem `sudo`.
+> * **Porta 8080 em uso:** Pare aplicações locais (`netstat -ano` / `lsof -i :8080`) antes de subir a API em container.
+
+---
+
+## 📌 2. Porquê usar Containers?
 
 O **Docker** empacota a aplicação Java, o JRE 21 e todas as configurações necessárias num artefato único e imutável (Imagem Container). Isso garante que o código rode exatamente da mesma forma no ambiente de desenvolvimento, homologação e produção.
 
 ---
 
-## 🏗️ 1. Dockerfile Multi-Stage Otimizado
+## 🏗️ 3. Dockerfile Multi-Stage Otimizado
 
 Abaixo está o `Dockerfile` utilizado na **Aula 7**, localizado na raiz do projeto:
 
@@ -40,7 +63,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 ---
 
-## 🚀 2. Comandos Operacionais
+## 🚀 4. Comandos Operacionais
 
 ### 1️⃣ Gerar o Artefato JAR Localmente (Pré-requisito se não usar multi-stage)
 ```bash
@@ -52,7 +75,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 docker build -t mymovies-api:1.0 .
 ```
 
-### 3️⃣ Executar o Container
+### 3️⃣ Executar o Container da API MyMovies
 ```bash
 docker run -d \
   -p 8080:8080 \
@@ -64,7 +87,7 @@ docker run -d \
 
 ---
 
-## 🔍 3. Comandos Úteis de Diagnóstico
+## 🔍 5. Comandos Úteis de Diagnóstico
 
 * **Listar containers em execução:**
   ```bash
@@ -89,7 +112,7 @@ docker run -d \
 
 ---
 
-## 🔐 4. Passagem de Segredos e Variáveis de Ambiente
+## 🔐 6. Passagem de Segredos e Variáveis de Ambiente
 
 Nunca grave chaves de API ou senhas dentro do `Dockerfile`. Injete as credenciais na execução do container utilizando a flag `-e`:
 
