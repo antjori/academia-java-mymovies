@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.rumos.mymovies.dto.MovieRequest;
@@ -95,16 +95,14 @@ public class MovieController {
     }
 
     @PatchMapping("/{id}/rating")
-    public ResponseEntity<MovieResponse> updateRating(@PathVariable Long id, @Valid @RequestBody RatingUpdateRequest request, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<MovieResponse> updateRating(@PathVariable Long id,
+                                                      @Valid @RequestBody RatingUpdateRequest request, @AuthenticationPrincipal Jwt jwt) {
         String userEmail = jwt.getSubject(); // Extrai o "sub" do JWT (ex: aluno@rumos.pt)
         log.info("Registo de avaliação recebido do utilizador: {} para o filme ID: {}", userEmail, id);
 
         var optionalMovieResponse = movieService.updateRating(id,request);
 
-        if (optionalMovieResponse.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(optionalMovieResponse.get());
+        return optionalMovieResponse.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }
