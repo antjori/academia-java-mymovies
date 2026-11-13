@@ -1,0 +1,21 @@
+meta {
+  name: Consulta Watchlist
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseURL}}/api/movies/watchlist
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user_token}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+  forwardAuthorizationHeader: false
+}
