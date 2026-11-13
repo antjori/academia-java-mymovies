@@ -1,9 +1,10 @@
 package pt.rumos.mymovies.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pt.rumos.mymovies.dto.*;
+import pt.rumos.mymovies.dto.MovieRequest;
+import pt.rumos.mymovies.dto.MovieResponse;
+import pt.rumos.mymovies.dto.RatingUpdateRequest;
 import pt.rumos.mymovies.exception.MovieNotFoundException;
 import pt.rumos.mymovies.model.Movie;
 import pt.rumos.mymovies.repository.MovieRepository;

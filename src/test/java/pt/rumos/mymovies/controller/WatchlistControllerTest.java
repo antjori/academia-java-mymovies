@@ -1,46 +1,37 @@
 package pt.rumos.mymovies.controller;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import pt.rumos.mymovies.dto.MovieResponse;
-import pt.rumos.mymovies.exception.MovieNotFoundException;
-import pt.rumos.mymovies.model.Movie;
-
-import java.util.ArrayList;
-import java.util.List;
+import pt.rumos.mymovies.service.WatchlistService;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "/scenario/user.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_CLASS, scripts = "/scenario/user_cleanup.sql")
 class WatchlistControllerTest {
 
     private static final String BASE_URL = "/api/movies";
 
     private static final String WATCHLIST_URL = BASE_URL + "/watchlist";
 
+    private static final String USER_EMAIL = "aluno@rumos.pt";
+
+    @Autowired
     private MockMvc mockMvc;
 
     @Mock
     private WatchlistService watchlistService;
-
-    @InjectMocks
-    private WatchlistController watchlistController;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(watchlistController).build();
-    }
 
     // ----------------------------------
     // Get Watchlist (GET /api/watchlist)
@@ -49,34 +40,26 @@ class WatchlistControllerTest {
     @Test
     void givenValidRequest_whenWatchlistIsEmpty_thenReturnEmptyList() throws Exception {
         // given
-        when(watchlistService.getWatchlist()).thenReturn(new ArrayList<>());
 
         // when
-        mockMvc.perform(get(WATCHLIST_URL))
+        mockMvc.perform(get(WATCHLIST_URL).with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(watchlistService).getWatchlist();
     }
 
     @Test
+    @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/scenario/watchlist.sql")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "/scenario/watchlist_cleanup.sql")
     void givenValidRequest_whenWatchlistIsNotEmpty_thenReturnListWithMovies() throws Exception {
         // given
-        final var movie1 = MovieResponse.fromDomain(new Movie(1L, "The Godfather", "Francis Ford Coppola", 1972, 9_2d));
-        final var movie2 = MovieResponse.fromDomain(new Movie(2L, "The Shawshank Redemption", "Frank Darabont", 1994,
-                9_3d));
-
-        when(watchlistService.getWatchlist()).thenReturn(List.of(movie1, movie2));
 
         // when
-        mockMvc.perform(get(WATCHLIST_URL))
+        mockMvc.perform(get(WATCHLIST_URL).with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)));
-
-        verify(watchlistService).getWatchlist();
     }
 
     // ------------------------------------------------------
@@ -84,63 +67,73 @@ class WatchlistControllerTest {
     // ------------------------------------------------------
 
     @Test
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "/scenario/watchlist_cleanup.sql")
     void givenValidMovieId_whenMovieIsNotInWatchlist_thenAddMovieToWatchlist() throws Exception {
         // given
-        final var movieId = 1L;
-
-        when(watchlistService.addToWatchlist(movieId)).thenReturn(WatchlistResponse.fromDomain(new Movie(movieId,
-                "The Godfather", "Francis Ford Coppola", 1972, 9.2d)));
+        final var movieId = 3L;
 
         // when
-        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(movieId))
-                .andExpect(jsonPath("$.title").value("The Godfather"))
-                .andExpect(jsonPath("$.director").value("Francis Ford Coppola"))
-                .andExpect(jsonPath("$.year").value(1972))
-                .andExpect(jsonPath("$.rating").value(9.2));
-
-        verify(watchlistService).addToWatchlist(movieId);
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$.[0].id").value(movieId))
+                .andExpect(jsonPath("$.[0].title").value("Interstellar"))
+                .andExpect(jsonPath("$.[0].director").value("Christopher Nolan"))
+                .andExpect(jsonPath("$.[0].year").value(2014))
+                .andExpect(jsonPath("$.[0].rating").isEmpty());
     }
 
     @Test
+    @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/scenario/watchlist.sql")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "/scenario/watchlist_cleanup.sql")
     void givenValidMovieId_whenMovieIsAlreadyInWatchlist_thenReturnConflict() throws Exception {
         // given
         final var movieId = 1L;
 
-        when(watchlistService.addToWatchlist(movieId)).thenThrow(new MovieAlreadyInWatchlistException(1L));
-
         // when
-        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("MOVIE_IN_WATCHLIST"))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Movie with ID 1 already in watchlist"));
-
-        verify(watchlistService).addToWatchlist(movieId);
     }
 
     @Test
-    void givenUnknownMovieId_whenAddingMovieToWatchlist_thenReturnNotFound() throws Exception {
+    void givenUnknownMovieId_whenAddingMovieToWatchlist_thenReturnMovieNotFound() throws Exception {
         // given
         final var movieId = 99L;
 
-        when(watchlistService.addToWatchlist(movieId)).thenThrow(new MovieNotFoundException(movieId));
-
         // when
-        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("MOVIE_NOT_FOUND"))
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("Movie with ID 99 not found"));
+                .andExpect(jsonPath("$.message").value("Movie not found: %d".formatted(movieId)));
+    }
 
-        verify(watchlistService).addToWatchlist(movieId);
+    @Test
+    void givenUnknownUserEmail_whenAddingMovieToWatchlist_thenReturnUserNotFound() throws Exception {
+        // given
+        final var movieId = 99L;
+
+        // when
+        mockMvc.perform(post(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
+                // then
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("User with email %s not found".formatted(USER_EMAIL)));
     }
 
     // -------------------------------------------------------------
@@ -148,37 +141,48 @@ class WatchlistControllerTest {
     // -------------------------------------------------------------
 
     @Test
+    @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "/scenario/watchlist.sql")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "/scenario/watchlist_cleanup.sql")
     void givenValidMovieId_whenMovieIsInWatchlist_thenMovieIsRemoved() throws Exception {
         // given
         final var movieId = 1L;
 
-        when(watchlistService.removeFromWatchlist(movieId)).thenReturn(true);
-
         // when
-        mockMvc.perform(delete(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(delete(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
-                .andExpect(status().isNoContent())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
-
-        verify(watchlistService).removeFromWatchlist(movieId);
+                .andExpect(status().isNoContent());
     }
 
     @Test
-    void givenValidMovieId_whenMovieIsNotInWatchList_thenReturnNotFound() throws Exception {
+    void givenMovieId_whenMovieIsNotInWatchlist_thenReturnMovieNotFound() throws Exception {
         // given
         final var movieId = 99L;
 
-        when(watchlistService.removeFromWatchlist(movieId)).thenReturn(false);
-
         // when
-        mockMvc.perform(delete(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(delete(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
                 // then
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value("MOVIE_NOT_FOUND"))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("Movie with ID 99 not found"));
+    }
 
-        verify(watchlistService).removeFromWatchlist(movieId);
+    @Test
+    void givenUnknownUserEmail_whenRemovingMovieFromWatchlist_thenReturnUserNotFound() throws Exception {
+        // given
+        final var movieId = 99L;
+
+        // when
+        mockMvc.perform(delete(WATCHLIST_URL + "/{movieId}", movieId).contentType(MediaType.APPLICATION_JSON)
+                        .with(SecurityMockMvcRequestPostProcessors.jwt()))
+                // then
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("User with email %s not found".formatted(USER_EMAIL)));
     }
 }
