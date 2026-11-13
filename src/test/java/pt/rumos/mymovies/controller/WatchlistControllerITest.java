@@ -29,8 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = "/scenario/user.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_CLASS, scripts = "/scenario/user_cleanup.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, scripts = {"/scenario/movie.sql", "/scenario/user.sql"})
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_CLASS, scripts = {"/scenario/user_cleanup.sql", "/scenario/movie_cleanup.sql"})
 class WatchlistControllerITest {
 
     private static final String BASE_URL = "/api/movies";

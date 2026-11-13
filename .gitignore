@@ -37,3 +37,4 @@ build/
 classroom-private.pem
 
 /src/main/resources/application-local.yaml
+/.env.local
