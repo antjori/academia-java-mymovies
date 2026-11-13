@@ -46,7 +46,7 @@ public class WatchlistController {
     public ResponseEntity<Void> removeMovieFromWatchlist(@PathVariable final Long id,
                                                          @AuthenticationPrincipal final Jwt jwt) {
         final var userEmail = jwt.getSubject();
-        return watchlistService.removeMovieFromWatchlist(id, userEmail) ? ResponseEntity.noContent().build() :
-                ResponseEntity.notFound().build();
+        watchlistService.removeMovieFromWatchlist(id, userEmail);
+        return ResponseEntity.noContent().build();
     }
 }

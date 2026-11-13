@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import pt.rumos.mymovies.exception.MovieAlreadyInWatchlistException;
 import pt.rumos.mymovies.exception.MovieNotFoundException;
+import pt.rumos.mymovies.exception.UserNotFoundException;
 
 import java.time.Instant;
 
@@ -18,7 +20,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MovieNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handleMovieNotFound(MovieNotFoundException ex, HttpServletRequest request) {
-        log.error("event=API_NOT_FOUND path={} type={}", request.getRequestURI(), ex.getClass().getSimpleName());
+        log.error("event=API_MOVIE_NOT_FOUND path={} type={}", request.getRequestURI(), ex.getClass().getSimpleName());
         return new ApiError(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
@@ -37,6 +39,32 @@ public class ApiExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "VALIDATION_ERROR",
                 "Falha na validação dos campos enviados.",
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
+        log.error("event=API_USER_NOT_FOUND path={} type={}", request.getRequestURI(), ex.getClass().getSimpleName());
+        return new ApiError(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "USER_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(MovieAlreadyInWatchlistException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleMovieAlreadyInWatchlist(MovieAlreadyInWatchlistException ex, HttpServletRequest request) {
+        log.error("event=API_CONFLICT path={} type={}", request.getRequestURI(), ex.getClass().getSimpleName());
+        return new ApiError(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "MOVIE_ALREADY_IN_WATCHLIST",
+                ex.getMessage(),
                 request.getRequestURI()
         );
     }

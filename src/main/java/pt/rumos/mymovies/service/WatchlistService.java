@@ -47,15 +47,14 @@ public class WatchlistService {
     }
 
     @Transactional
-    public boolean removeMovieFromWatchlist(final Long movieId, final String userEmail) {
+    public void removeMovieFromWatchlist(final Long movieId, final String userEmail) {
         final var user = userRepository.findByEmail(userEmail).orElseThrow(() -> new UserNotFoundException(userEmail));
         final var watchlist = new HashSet<>(user.getWatchlist());
         
-        if (watchlist.removeIf(movie -> movie.getId().equals(movieId))) {
-            user.setWatchlist(watchlist);
-            return true;
+        if (!watchlist.removeIf(movie -> movie.getId().equals(movieId))) {
+            throw new MovieNotFoundException(movieId);
         }
 
-        return false;
+        user.setWatchlist(watchlist);
     }
 }

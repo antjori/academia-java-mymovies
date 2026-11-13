@@ -46,8 +46,8 @@ public class SecurityConfig {
     //e se não farei nenhuma configuração adicional, o Spring já inicializa e gerencia
     //o bean de decodificação. Mantido aqui para visualizar onde fica em caso de ausência
     //no properties (oauth2.jwt(Customizer.withDefaults() – usa o bean gerado pelo Spring)
-    @Bean
+    /*@Bean
     public JwtDecoder jwtDecoder() {
         return NimbusJwtDecoder.withPublicKey(this.publicKey).build();
-    }
+    }*/
 }
