@@ -75,9 +75,16 @@
             <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
+        <finalName>my-movies</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

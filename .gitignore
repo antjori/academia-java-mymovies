@@ -36,3 +36,5 @@ build/
 ### Chave privada de geracao Jwt
 classroom-private.pem
 
+/src/main/resources/application-local.yaml
+/.env.local
