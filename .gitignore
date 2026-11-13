@@ -36,3 +36,6 @@ build/
 ### Chave privada de geracao Jwt
 classroom-private.pem
 
+### variaveis de ambiente docker
+.env
+.env.local
